@@ -46,7 +46,8 @@ export function requireFields(body: Record<string, unknown>, fields: string[]) {
 
 export function paginate<T>(items: T[], query: URLSearchParams) {
   const page = Math.max(Number(query.get('page') || 1), 1)
-  const pageSize = Math.min(Math.max(Number(query.get('pageSize') || 10), 1), 50)
+  const rawPageSize = query.get('pageSize') || query.get('pagesize') || query.get('page_size') || String(query.get('pagesize'))
+  const pageSize = Math.min(Math.max(Number(rawPageSize || 10), 1), 50)
   const start = (page - 1) * pageSize
   return {
     data: items.slice(start, start + pageSize),
