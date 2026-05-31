@@ -22,6 +22,8 @@ function paginateMemory<T>(items: T[], query: URLSearchParams) {
   return paginate(items, query)
 }
 
+
+
 async function paginateMongo(name: string, filter: Filter<Record<string, unknown>>, query: URLSearchParams, sort = {}) {
   const page = Math.max(Number(query.get('page') || 1), 1)
   const pageSize = Math.min(Math.max(Number(query.get('pageSize') || 10), 1), 50)
