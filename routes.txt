@@ -1,0 +1,188 @@
+Base path: /api/v1 (OpenAPI doc at GET /api/docs)
+
+GET: /api/v1/status
+Request: none
+Response: { database: <status string/object> }
+
+
+
+
+GET: /api/v1/countries
+Request: optional query pagination (page, pageSize)
+Response: { data: [ ...countryObjects ] }
+
+
+
+GET: /api/v1/states
+Request: optional query pagination
+Response: { data: [ ...stateObjects ] }
+
+
+
+GET: /api/v1/categories
+Request: optional query pagination
+Response: { data: [ ...categoryObjects ] }
+
+
+GET: /api/v1/traffic-rules
+Request query: q, state, approvalStatus, page, pageSize
+Response: { data: [ ...rules ], meta: { page, pageSize, total, totalPages } }
+
+
+
+GET: /api/v1/laws
+Request query: q, state, country, category, page, pageSize
+Response: { data: [ ...lawObjects ], meta: { page, pageSize, total, totalPages } }
+
+
+
+GET: /api/v1/laws/:id
+Request params: id (URL-encoded law id)
+Response success: { data: { ...lawFields, relatedLaws: [...] } }
+Errors: 404 if not found
+
+
+
+GET: /api/v1/violations
+Request query: q, state, country, page, pageSize
+Response: { data: [ ...violationObjects ], meta: { page, pageSize, total, totalPages } }
+
+
+GET: /api/v1/violations/:id
+Request params: id
+Response: { data: violationObject } or 404
+
+
+GET: /api/v1/zones
+Request query: pagination + optional search params
+Response: { data: [ ...zones ], meta: { page, pageSize, total, totalPages } }
+
+
+GET: /api/v1/notifications
+Request: none
+Response: { data: [ ...notificationObjects ] }
+
+
+
+GET: /api/v1/dashboard
+Request: none (uses sample/user from store)
+Response: { profile, vehicles, savedLocations, complianceScore, activeChallans, legalAlerts }
+
+
+GET: /api/v1/zones/nearby
+Request query: lat, lng (as query strings)
+Response: { data: [ zoneObjects with distanceMeters ] }
+Errors: 422 if invalid coordinates
+
+
+POST: /api/v1/geo/lookup
+Request body: { lat, lng, violationCode?, vehicleType? }
+Response: { primaryZone, zones, applicableFees: [ ...calculatedChallanObjects ] }
+Errors: 422 if lat/lng invalid
+
+
+POST: /api/v1/compliance/score
+Request body: { vehicleId? | numberPlate? | vehiclePlate? | vehicle? }
+Response: { vehicle, score, grade, reasons: [string], recommendations: [string] }
+Errors: 404 if vehicle not found
+
+
+POST: /api/v1/challans/decode
+Request body: { challanNumber | id, violationCode? }
+Response: { challan|null, violation, fineBreakdown: { baseFine, repeatOffenseFine, estimatedTotal }, applicableLaw|null, paymentInstructions, appealInstructions }
+Errors: 404 if violation not found
+
+
+POST: /api/v1/challans/calculate and POST /api/v1/challan/calculate (alias)
+Request body (accepted fields): { violationCode|violation, vehicleType, countryId, stateId|state, repeatOffense, zoneType, speed, speedLimit }
+Response: { country, state|null, violation, vehicleType, localFineSchedule|null, repeatOffense, compoundingAllowed, fine: { currency, baseAmount, vehicleMultiplier, payableAmount }, explanation, sourceTrail: [...] }
+Errors: 404 if violation code not found
+
+
+
+POST: /api/v1/routes/check
+Request body: { startStateId?, destinationStateId?, start?, destination? }
+Response: { route: { start, destination, stateTransitions: [...] }, restrictions: [...zones], speedZones: [...], tollInformation: string, requiredDocuments: [...] }
+Admin (requires admin auth via requireAdmin):
+
+
+
+GET /api/v1/admin/audit-logs
+Request query: pagination (page, pageSize, q)
+Response: paginated { data: [...auditLogs], meta: { ... } }
+
+
+POST /api/v1/admin/laws
+Request body: law payload: { id?, countryId, title, categoryId, stateId, tags[], section, legalSource, effectiveDate, description, penalties[], relatedLawIds[] }
+Response: 201 { data: createdLaw }
+Errors: 422 for missing title/section/description
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DriveLegal Plan API (generic collection CRUD + extras) — mounted via /*:
+
+CRUD pattern for collections: supported collections include jurisdictions, vehicle-types, fines (alias to fineRules), challan-calculators, documents, users, audit-logs, laws, violations, countries, etc.
+
+
+
+
+
+GET /api/v1/<collection>
+Query: q|search, active=true|false, page, pageSize
+Response: { data: [...], meta: { page, pageSize, total, totalPages } }
+
+
+
+GET /api/v1/<collection>/:id
+Response: { data: <record> } or 404
+
+
+POST /api/v1/<collection>
+Body: arbitrary JSON record for the collection (server will add _id, timestamps)
+Response: 201 { data: createdRecord }
+
+
+PUT/PATCH /api/v1/<collection>/:id
+Body: patch fields
+Response: { data: updatedRecord } or 404
+
+
+DELETE /api/v1/<collection>/:id
+Response: { data: deletedRecord } or 404
+
+
+POST /api/v1/location/detect
+Body: { lat, lng }
+Response: { country, state|null, city|null, jurisdictions: [...] }
+
+
+
+POST /api/v1/fines/lookup
+Body: { violationId?, violationCode?, vehicleType?, lat?, lng?, jurisdictionId? }
+Response: { fine, repeatFine, jurisdiction|null, vehicleType|null, violation|null, rule }
+Errors: 404 if no rule found
