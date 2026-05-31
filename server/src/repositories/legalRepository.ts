@@ -41,7 +41,23 @@ function regex(value: string) {
 }
 
 export async function listCountries() {
-  return { data: await findAll('countries', db.countries) }
+  const raw = (await findAll('countries', db.countries)) as Array<Record<string, unknown>>
+  const normalized = raw.map((c) => {
+    // support legacy shapes: { countryCode, countryName } or { code, name }
+    const code = String((c && (c.code || (c.countryCode as string))) || '')
+    const id = String(((c && (c.id || code)) || '').toString())
+    const name = String((c && (c.name || (c.countryName as string))) || '')
+    return {
+      id,
+      name,
+      code,
+      currency: (c && (c.currency || (c.currencY as string) || '')) || '',
+      nationalFramework: (c && (c.nationalFramework as string)) || (c && (c.framework as string)) || null,
+      // include original record for any additional fields the frontend might need
+      ...(c || {}),
+    }
+  })
+  return { data: normalized }
 }
 
 export async function listStates() {
