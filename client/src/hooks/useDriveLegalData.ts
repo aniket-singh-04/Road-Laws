@@ -36,7 +36,15 @@ export function useDriveLegalData(countryFilter: string, stateFilter: string, qu
       const cached = localStorage.getItem(cacheKey)
       if (cached) {
         const parsed = JSON.parse(cached) as CachedCatalog
-        setCountries(parsed.countries || fallbackCountries)
+        const normalizeCountry = (c: any) => ({
+          id: c.id || c.countryCode || c.code || '',
+          name: c.name || c.countryName || '',
+          code: c.code || c.countryCode || '',
+          currency: c.currency || '',
+          nationalFramework: c.nationalFramework || c.framework || null,
+          ...c,
+        })
+        setCountries((parsed.countries || fallbackCountries).map(normalizeCountry))
         setRegions(parsed.regions || fallbackRegions)
         setLaws(parsed.laws || fallbackLaws)
         setViolations(parsed.violations || fallbackViolations)
@@ -49,7 +57,13 @@ export function useDriveLegalData(countryFilter: string, stateFilter: string, qu
         const [lawData, violationData, zoneData, dashData, countryData, regionData, fineData, documentData] = await loadCatalog(countryFilter)
         if (!active) return
         setToken('')
-        setCountries(countryData.data || fallbackCountries)
+        setCountries((countryData.data || fallbackCountries).map((c: any) => ({
+          id: c.id || c.countryCode || c.code || '',
+          name: c.name || c.countryName || '',
+          code: c.code || c.countryCode || '',
+          currency: c.currency || '',
+          ...c,
+        })))
         setRegions(regionData.data || fallbackRegions)
         setLaws(lawData.data || fallbackLaws)
         setViolations(violationData.data || fallbackViolations)
@@ -58,7 +72,13 @@ export function useDriveLegalData(countryFilter: string, stateFilter: string, qu
         setLegalDocuments(documentData.data || fallbackLegalDocuments)
         setDashboard(dashData.profile ? dashData : fallbackDashboard)
         localStorage.setItem(cacheKey, JSON.stringify({
-          countries: countryData.data || fallbackCountries,
+          countries: (countryData.data || fallbackCountries).map((c: any) => ({
+            id: c.id || c.countryCode || c.code || '',
+            name: c.name || c.countryName || '',
+            code: c.code || c.countryCode || '',
+            currency: c.currency || '',
+            ...c,
+          })),
           regions: regionData.data || fallbackRegions,
           laws: lawData.data || fallbackLaws,
           violations: violationData.data || fallbackViolations,
